@@ -2,6 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <cstring>
 #include <ctime>
 
 using namespace std;
@@ -10,17 +11,17 @@ using namespace std;
 #define diaria_Intermediario 20
 #define diaria_Super 30
 
-struct
+typedef struct
 {
-    string codigo, marca_modelo, placa, nomeCarro;
+    char codigo[4], marca_modelo[50], placa[7];
     char categoria;
-    bool situacao; // false para locado e true para disponivel
+    char situacao; // false para locado e true para disponivel
     int qtdLocacoes = 0;
 } Veiculo;
 
-struct
+typedef struct
 {
-    string cpf, codigoVeiculo;
+    char cpf, codigoVeiculo;
     int qtdDias;
     bool situacaoLocacao; // True para Ativo e False para Inativo
     string dataDevolucao;
@@ -32,21 +33,88 @@ void maiusc(string &); // Tranformar em maiUsculo (Lembrar se vamos usar. Caso n
 void lerDadosVeiculo(string, string, string, char);
 string escolherMarca();
 
-int main()
+void mostrarDadosArquivo()
 {
-    int opcao;
-    do
+    ifstream frota1("FROTA.bin", ios::binary); // Abrir o arquivo em modo binário para leitura
+
+    // Verificar se o arquivo foi aberto corretamente
+    if (!frota1)
     {
+        cout << "Erro ao abrir o arquivo FROTA.bin!" << endl;
+        return;
+    }
+
+    Veiculo veiculoDados; // Variável para armazenar os dados lidos do arquivo
+
+    cout << "Lista de Veículos cadastrados:\n";
+    cout << "Codigo\tMarca-Modelo\tPlaca\tCategoria\tSituacao\tQtd Locacoes\n";
+    cout << "---------------------------------------------------------------\n";
+
+    // Ler e mostrar os dados do arquivo enquanto houver dados
+    while (frota1.read((char *)&veiculoDados, sizeof(Veiculo)))
+    {
+        // Mostrar os dados do veículo
+        cout << veiculoDados.codigo << "\t"
+             << veiculoDados.marca_modelo << "\t"
+             << veiculoDados.placa << "\t"
+             << veiculoDados.categoria << "\t"
+             << (veiculoDados.situacao ? "Disponivel" : "Locado") << "\t"
+             << veiculoDados.qtdLocacoes << endl;
+    }
+
+    frota1.close(); // Fechar o arquivo após a leitura
+}
+
+int main() {
+    int opcao;
+    string codigoMain, marca_modeloMain, placaMain, situacaoMain;
+    char categoriaMain;
+    Veiculo veiculoDados;
+
+    do {
         cout << "1. Inclusao de veiculo" << endl;
-        lerDadosVeiculo(Veiculo.codigo, Veiculo.marca_modelo, Veiculo.placa, Veiculo.categoria);
-        
         cout << "2. Locacao de veiculo" << endl;
         cout << "3. Devolucao de veiculo" << endl;
-        cout << "4. Relatório de locacaes ativas" << endl;
+        cout << "4. Relatório de locacoes ativas" << endl;
         cout << "5. Sair" << endl;
         cout << "Escolha uma opção: ";
         cin >> opcao;
 
+        ofstream frota1("FROTA.bin", ios::binary | ios::app);
+        switch(opcao) {
+            case 1:
+                // Inclusão de veículo
+                lerDadosVeiculo(codigoMain, marca_modeloMain, placaMain, categoriaMain);
+                strcpy(veiculoDados.codigo, codigoMain.c_str());
+                strcpy(veiculoDados.marca_modelo, marca_modeloMain.c_str());
+                strcpy(veiculoDados.placa, placaMain.c_str());
+                frota1.write((const char *)(&veiculoDados), sizeof(Veiculo));
+                frota1.close();
+                break;
+
+            case 2:
+                // Locação de veículo (adicionar implementação aqui)
+                cout <<endl;
+                break;
+
+            case 3:
+                // Devolução de veículo (adicionar implementação aqui)
+                cout << endl;
+                break;
+
+            case 4:
+                // Relatório de locações ativas (adicionar implementação aqui)
+                cout <<endl;
+                break;
+
+            case 5:
+                cout <<endl;
+                break;
+
+            default:
+                cout << endl;
+                break;
+        }
     } while (opcao != 5);
 
     return 0;
