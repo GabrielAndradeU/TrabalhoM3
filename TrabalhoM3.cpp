@@ -15,7 +15,7 @@ typedef struct
 {
     char codigo[4], marca_modelo[50], placa[7];
     char categoria;
-    char situacao; // false para locado e true para disponivel
+    bool situacao; // false para locado e true para disponivel
     int qtdLocacoes = 0;
 } Veiculo;
 
@@ -29,49 +29,19 @@ typedef struct
 
 bool ehNumero(string); // Validação de número
 bool ehLetra(string);  // Conferir se é letra
-void maiusc(string &); // Tranformar em maiUsculo (Lembrar se vamos usar. Caso não usarmos. RETIRAR)
-void lerDadosVeiculo(string, string, string, char);
+void maiusc(string &); // Tranformar em maiúsculo (Lembrar se vamos usar. Caso não usarmos. RETIRAR)
+void lerDadosVeiculo(string &codigo, string &marca_modelo, string &placa, char &categoria);
 string escolherMarca();
 
-void mostrarDadosArquivo()
+int main()
 {
-    ifstream frota1("FROTA.bin", ios::binary); // Abrir o arquivo em modo binário para leitura
-
-    // Verificar se o arquivo foi aberto corretamente
-    if (!frota1)
-    {
-        cout << "Erro ao abrir o arquivo FROTA.bin!" << endl;
-        return;
-    }
-
-    Veiculo veiculoDados; // Variável para armazenar os dados lidos do arquivo
-
-    cout << "Lista de Veículos cadastrados:\n";
-    cout << "Codigo\tMarca-Modelo\tPlaca\tCategoria\tSituacao\tQtd Locacoes\n";
-    cout << "---------------------------------------------------------------\n";
-
-    // Ler e mostrar os dados do arquivo enquanto houver dados
-    while (frota1.read((char *)&veiculoDados, sizeof(Veiculo)))
-    {
-        // Mostrar os dados do veículo
-        cout << veiculoDados.codigo << "\t"
-             << veiculoDados.marca_modelo << "\t"
-             << veiculoDados.placa << "\t"
-             << veiculoDados.categoria << "\t"
-             << (veiculoDados.situacao ? "Disponivel" : "Locado") << "\t"
-             << veiculoDados.qtdLocacoes << endl;
-    }
-
-    frota1.close(); // Fechar o arquivo após a leitura
-}
-
-int main() {
     int opcao;
     string codigoMain, marca_modeloMain, placaMain, situacaoMain;
     char categoriaMain;
     Veiculo veiculoDados;
 
-    do {
+    do
+    {
         cout << "1. Inclusao de veiculo" << endl;
         cout << "2. Locacao de veiculo" << endl;
         cout << "3. Devolucao de veiculo" << endl;
@@ -80,42 +50,96 @@ int main() {
         cout << "Escolha uma opcao: ";
         cin >> opcao;
         cin.ignore();
-        ofstream frota1("FROTA.bin", ios::binary | ios::app);
-        switch(opcao) {
-            case 1:
-                // Inclusão de veículo
-                lerDadosVeiculo(codigoMain, marca_modeloMain, placaMain, categoriaMain);
+        switch (opcao)
+        {
+        case 1:
+            // Inclusão de veículo
+            lerDadosVeiculo(codigoMain, marca_modeloMain, placaMain, categoriaMain);
+            {
+                ofstream frota2("frota.bin", ios::binary | ios::app); // Usar ofstream para escrita
+                if (!frota2)
+                {
+                    cout << "Erro ao abrir o arquivo frota.bin para escrita!" << endl;
+                    break;
+                }
+
                 strcpy(veiculoDados.codigo, codigoMain.c_str());
                 strcpy(veiculoDados.marca_modelo, marca_modeloMain.c_str());
                 strcpy(veiculoDados.placa, placaMain.c_str());
-                frota1.write((const char *)(&veiculoDados), sizeof(Veiculo));
+                frota2.write((const char *)(&veiculoDados), sizeof(Veiculo));
+                frota2.close();
+            }
+            break;
+
+        case 2:
+            {
+                ifstream frota1("frota.bin", ios::binary); // Abrir o arquivo em modo binário para leitura
+                if (!frota1)
+                {
+                    cout << "Erro ao abrir o arquivo FROTA.bin para leitura!" << endl;
+                    break;
+                }
+
+                // Obtendo o número total de registros (pulos para o final e uso de tellg)
+                frota1.seekg(0, ios::end);
+                double cont = frota1.tellg(); // Corrigido o tipo da variável 'cont' para long long
+                frota1.seekg(0, ios::beg); // Coloca o ponteiro de leitura no começo do arquivo
+
+                if (cont == 0)
+                {
+                    cout << "O arquivo está vazio!" << endl;
+                    frota1.close();
+                    break;
+                }
+
+                cout << "Lista de Veículos cadastrados:\n";
+                cout << "Codigo\tMarca-Modelo\tPlaca\tCategoria\tSituacao\tQtd Locacoes\n";
+                cout << "---------------------------------------------------------------\n";
+
+                for (double i = 0; i < cont / sizeof(Veiculo); i++)  // Ajustando para percorrer corretamente os registros
+                {
+                    frota1.read((char *)&veiculoDados, sizeof(Veiculo));
+                    if (frota1)
+                    {
+                        // Mostrar os dados do veículo
+                        cout << veiculoDados.codigo << "\t"
+                             << veiculoDados.marca_modelo << "\t"
+                             << veiculoDados.placa << "\t"
+                             << veiculoDados.categoria << "\t"
+                             << (veiculoDados.situacao ? "Disponivel" : "Locado") << "\t"
+                             << veiculoDados.qtdLocacoes << endl;
+                    }
+                    else
+                    {
+                        cout << "Erro ao ler os dados do veículo no registro " << i + 1 << endl;
+                        break;
+                    }
+                }
+
                 frota1.close();
-                break;
-
-            case 2:
-                mostrarDadosArquivo();
-                // Locação de veículo (adicionar implementação aqui)
-                cout <<endl;
-                break;
-
-            case 3:
-                // Devolução de veículo (adicionar implementação aqui)
                 cout << endl;
-                break;
+            }
+            break;
 
-            case 4:
-                // Relatório de locações ativas (adicionar implementação aqui)
-                cout <<endl;
-                break;
+        case 3:
+            // Devolução de veículo (adicionar implementação aqui)
+            cout << endl;
+            break;
 
-            case 5:
-                cout <<endl;
-                break;
+        case 4:
+            // Relatório de locações ativas (adicionar implementação aqui)
+            cout << endl;
+            break;
 
-            default:
-                cout << endl;
-                break;
+        case 5:
+            cout << endl;
+            break;
+
+        default:
+            cout << endl;
+            break;
         }
+
     } while (opcao != 5);
 
     return 0;
@@ -158,22 +182,21 @@ void maiusc(string &frase)
     }
 }
 
-void lerDadosVeiculo(string codigo, string marca_modelo, string placa, char categoria)
+void lerDadosVeiculo(string &codigo, string &marca_modelo, string &placa, char &categoria)
 {
-    bool estaok = false; // Rever depois, para utilizar apenas uma variavel bool na sub rotina
+    bool estaok = false;
     do
     {
-        bool estaok = false;
         cout << "Digite o codigo do veiculo: ";
         getline(cin, codigo);
-        if (codigo.size() != 4){
+        if (codigo.size() != 4)
+        {
             cout << "Erro: o Codigo precisa conter apenas numeros com ate 4 digitos" << endl;
-             // Aprendemos em python. Da para usar nesse caso
-        }    
+        }
         estaok = ehNumero(codigo);
         if (not estaok)
             cout << "Erro: o Codigo precisa conter apenas numeros com ate 4 digitos" << endl;
-    } while (not estaok and codigo.size() != 4);
+    } while (not estaok);
 
     marca_modelo = escolherMarca();
 
@@ -223,20 +246,21 @@ void lerDadosVeiculo(string codigo, string marca_modelo, string placa, char cate
     {
         cout << "Digite a categoria (B/I/S): ";
         categoria = toupper(cin.get());
-        if (categoria != 'B' && categoria != 'I' && categoria != 'S')
+        if (categoria != 'B' and categoria != 'I' and categoria != 'S')
         {
-            cout << "Erro: categoria inválida! Digite apenas B, I ou S." << endl;
+            cout << "Erro: a categoria precisa ser B, I ou S." << endl;
         }
-    } while (categoria != 'B' && categoria != 'I' && categoria != 'S');
+    } while (categoria != 'B' and categoria != 'I' and categoria != 'S');
 }
 
 string escolherMarca()
 {
     int opcao;
     string marca;
+
     do
     {
-        cout << "Escolha a marca do carro:" << endl;
+        cout << "Escolha uma marca:" << endl;
         cout << "1 - Toyota" << endl;
         cout << "2 - Ford" << endl;
         cout << "3 - Honda" << endl;
