@@ -75,11 +75,11 @@ int main() {
         cout << "1. Inclusao de veiculo" << endl;
         cout << "2. Locacao de veiculo" << endl;
         cout << "3. Devolucao de veiculo" << endl;
-        cout << "4. Relatório de locacoes ativas" << endl;
+        cout << "4. Relatorio de locacoes ativas" << endl;
         cout << "5. Sair" << endl;
-        cout << "Escolha uma opção: ";
+        cout << "Escolha uma opcao: ";
         cin >> opcao;
-
+        cin.ignore();
         ofstream frota1("FROTA.bin", ios::binary | ios::app);
         switch(opcao) {
             case 1:
@@ -93,6 +93,7 @@ int main() {
                 break;
 
             case 2:
+                mostrarDadosArquivo();
                 // Locação de veículo (adicionar implementação aqui)
                 cout <<endl;
                 break;
@@ -163,15 +164,17 @@ void lerDadosVeiculo(string codigo, string marca_modelo, string placa, char cate
     do
     {
         bool estaok = false;
-        cout << "Digite o código do veículo: ";
+        cout << "Digite o codigo do veiculo: ";
         getline(cin, codigo);
-        if (codigo.size() != 4)
+        if (codigo.size() != 4){
             cout << "Erro: o Codigo precisa conter apenas numeros com ate 4 digitos" << endl;
-        continue; // Aprendemos em python. Da para usar nesse caso
+             // Aprendemos em python. Da para usar nesse caso
+        }    
         estaok = ehNumero(codigo);
         if (not estaok)
             cout << "Erro: o Codigo precisa conter apenas numeros com ate 4 digitos" << endl;
-    } while (not estaok);
+    } while (not estaok and codigo.size() != 4);
+
     marca_modelo = escolherMarca();
 
     do
@@ -238,7 +241,7 @@ string escolherMarca()
         cout << "2 - Ford" << endl;
         cout << "3 - Honda" << endl;
         cout << "4 - Chevrolet" << endl;
-        cout << "Digite o número da marca escolhida: ";
+        cout << "Digite o numero da marca escolhida: ";
         cin >> opcao;
 
         switch (opcao)
