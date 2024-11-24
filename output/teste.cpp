@@ -14,15 +14,18 @@ using namespace std;
 
 typedef struct
 {
-    char codigo[5], marca_modelo[30], placa[7];
+    char codigo[5];          // Usando 5 para incluir o '\0' no final
+    char marca_modelo[31];   // Usando 31 para incluir o '\0' no final
+    char placa[8];           // Usando 8 para incluir o '\0' no final
     char categoria;
-    bool situacao; // false para locado e true para disponivel
+    bool situacao;           // false para locado e true para disponível
     int qtdLocacoes = 0;
 } Veiculo;
 
 typedef struct
 {
-    char cpf, codigoVeiculo;
+    string cpf;
+    string codigoVeiculo;
     int qtdDias;
     bool situacaoLocacao; // True para Ativo e False para Inativo
     string dataDevolucao;
@@ -30,7 +33,6 @@ typedef struct
 
 bool ehNumero(string); // Validação de número
 bool ehLetra(string);  // Conferir se é letra
-void maiusc(string &); // Tranformar em maiúsculo (Lembrar se vamos usar. Caso não usarmos. RETIRAR)
 void lerDadosVeiculo(string &codigo, string &marca_modelo, string &placa, char &categoria);
 string escolherMarca();
 
@@ -64,9 +66,14 @@ int main()
                     break;
                 }
 
-                strcpy(veiculoDados.codigo, codigoMain.c_str());
-                strcpy(veiculoDados.marca_modelo, marca_modeloMain.c_str());
-                strcpy(veiculoDados.placa, placaMain.c_str());
+                // Certificar que as strings são copiadas corretamente
+                strncpy(veiculoDados.codigo, codigoMain.c_str(), sizeof(veiculoDados.codigo) - 1);
+                strncpy(veiculoDados.marca_modelo, marca_modeloMain.c_str(), sizeof(veiculoDados.marca_modelo) - 1);
+                strncpy(veiculoDados.placa, placaMain.c_str(), sizeof(veiculoDados.placa) - 1);
+                veiculoDados.codigo[sizeof(veiculoDados.codigo) - 1] = '\0';
+                veiculoDados.marca_modelo[sizeof(veiculoDados.marca_modelo) - 1] = '\0';
+                veiculoDados.placa[sizeof(veiculoDados.placa) - 1] = '\0';
+
                 frota2.write((const char *)(&veiculoDados), sizeof(Veiculo));
                 frota2.close();
             }
@@ -81,9 +88,8 @@ int main()
                     break;
                 }
 
-              
                 frota1.seekg(0, ios::end);
-                double cont = frota1.tellg();
+                long long cont = frota1.tellg();  // Usando long long para contagem de registros
                 frota1.seekg(0, ios::beg); 
 
                 if (cont == 0)
@@ -97,7 +103,7 @@ int main()
                 cout << "Codigo\tMarca-Modelo\tPlaca\tCategoria\tQtd Locacoes\n";
                 cout << "---------------------------------------------------------------\n";
 
-                for (double i = 0; i < cont / sizeof(Veiculo); i++)  
+                for (long long i = 0; i < cont / sizeof(Veiculo); i++)  
                 {
                     frota1.read((char *)&veiculoDados, sizeof(Veiculo));
                     if (frota1)
@@ -108,7 +114,7 @@ int main()
                              << veiculoDados.placa << "\t"
                              << veiculoDados.categoria << "\t"
                              << veiculoDados.qtdLocacoes << "\t";
-                             cout<<endl;
+                             cout << endl;
                     }
                     else
                     {
@@ -175,14 +181,6 @@ bool ehLetra(string letra)
     return true;
 }
 
-void maiusc(string &frase)
-{
-    for (int i = 0; i < frase.size(); i++)
-    {
-        frase[i] = toupper(frase[i]);
-    }
-}
-
 void lerDadosVeiculo(string &codigo, string &marca_modelo, string &placa, char &categoria)
 {
     bool estaok = false;
@@ -211,7 +209,7 @@ void lerDadosVeiculo(string &codigo, string &marca_modelo, string &placa, char &
         if (not estaok)
             cout<<"Nome invalido"<<endl;
     } while (not estaok);
-    maiusc(nomeCarro);
+    
     marca_modelo = marca_modelo + " - " + nomeCarro;
 
     do
