@@ -33,6 +33,7 @@ bool ehLetra(string);  // Conferir se é letra
 void maiusc(string &); // Tranformar em maiúsculo (Lembrar se vamos usar. Caso não usarmos. RETIRAR)
 void lerDadosVeiculo(string &codigo, string &marca_modelo, string &placa, char &categoria);
 string escolherMarca();
+bool pesquisar (Veiculo, string);
 
 int main()
 {
@@ -44,10 +45,11 @@ int main()
     do
     {
         cout << "1. Inclusao de veiculo" << endl;
-        cout << "2. Locacao de veiculo" << endl;
+        cout << "2. Locacao de veiculo" << endl; 
         cout << "3. Devolucao de veiculo" << endl;
         cout << "4. Relatorio de locacoes ativas" << endl;
-        cout << "5. Sair" << endl;
+        cout << "5. Relatorio de veiculos" << endl; // Se der tempo, fazer uma Sub rotina para ficar organizado.
+        cout << "6. Sair" << endl;
         cout << "Escolha uma opcao: ";
         cin >> opcao;
         cin.ignore();
@@ -73,11 +75,24 @@ int main()
             break;
 
         case 2:
-            {
+            break;
+
+        case 3:
+            // Devolução de veículo (adicionar implementação aqui)
+            cout << endl;
+            break;
+
+        case 4:
+            // Relatório de locações ativas (adicionar implementação aqui)
+            cout << endl;
+            break;
+
+        case 5:
+                {
                 ifstream frota1("frota.bin", ios::binary); 
                 if (!frota1)
                 {
-                    cout << "Erro ao abrir o arquivo FROTA.bin para leitura!" << endl;
+                    cout << "Erro ao abrir o arquivo FROTA.bin para leitura." << endl;
                     break;
                 }
 
@@ -121,27 +136,15 @@ int main()
                 cout << endl;
             }
             break;
-
-        case 3:
-            // Devolução de veículo (adicionar implementação aqui)
-            cout << endl;
-            break;
-
-        case 4:
-            // Relatório de locações ativas (adicionar implementação aqui)
-            cout << endl;
-            break;
-
-        case 5:
-            cout << endl;
-            break;
+        case 6:
+            break;            
 
         default:
             cout << endl;
             break;
         }
 
-    } while (opcao != 5);
+    } while (opcao != 6);
 
     return 0;
 }
@@ -300,4 +303,31 @@ string escolherMarca()
             cout << "Marca invalida. Escolha um numero entre 1 e 4." << endl;
         }
     } while (true);
+}
+
+bool pesquisar(Veiculo pesquisa, string placaProcurada)
+{
+    ifstream frotapesquisa("frota.bin", ios::binary);
+    char placaAux[7];
+    strcpy(placaAux, placaProcurada.c_str());
+
+    frotapesquisa.close();
+    frotapesquisa.seekg(0, ios::end);
+    double cont = frotapesquisa.tellg();
+    frotapesquisa.seekg(0, ios::beg);
+    for (double i = 0; i < cont / sizeof(Veiculo); i++)
+    {
+        frotapesquisa.read((char *)&pesquisa, sizeof(Veiculo));
+        if (frotapesquisa)
+        {
+            if (placaAux == placaProcurada)
+                return true;            
+        }
+        else
+        {
+            cout << "Erro ao ler os dados do veículo no registro " << i + 1 << endl;
+            break;
+        }
+    }
+    return false;
 }
