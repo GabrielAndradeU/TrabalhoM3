@@ -326,8 +326,10 @@ bool pesquisar(Veiculo pesquisa, string placaProcurada)
         else
         {
             cout << "Erro ao ler os dados do veículo no registro " << i + 1 << endl;
+            cout<<endl;
             break;
         }
     }
     return false;
 }
+
