@@ -37,6 +37,7 @@ bool pesquisarPlaca(Veiculo, string);
 bool pesquisarDisponivel(Veiculo, string); // da para melhorar depois, para pesquisar aqueles que não estão disponiveis tbm, em vez de apenas disponivel
 void exibirFrota(Veiculo);
 void exibirFrotaDisponivel(Veiculo, char);
+void atualizarSituacao (string,string);
 
 int main()
 {
@@ -479,4 +480,59 @@ void exibirFrotaDisponivel(Veiculo veiculoDados, char categoria)
 
     frota1.close();
     cout << endl;
+}
+
+
+void atualizarSituacao(string placa, string novaSituacao) {
+    
+    vector<Veiculo> frota; 
+    Veiculo aux;  
+
+    ifstream frotaArq("frota.bin", ios::binary);
+    if (!frotaArq) {
+        cout << "Erro ao abrir o arquivo frota.bin para leitura" << endl;
+        return;
+    }
+
+   
+    frotaArq.seekg(0, ios::end);  
+    double tamanhoArq = frotaArq.tellg();  
+    frotaArq.seekg(0, ios::beg);  
+
+    for (double i = 0; i<tamanhoArq; i++) {
+        frotaArq.read((char *)&aux, sizeof(Veiculo)); 
+        if (frotaArq) {
+            frota.push_back(aux);  
+        }
+    }
+
+    frotaArq.close(); 
+
+    bool encontrado = false;
+    for (size_t i = 0; i < frota.size(); i++) {  
+        if (string(frota[i].placa) == placa) {
+         
+            strcpy(frota[i].situacao, novaSituacao.c_str());
+            encontrado = true;
+            break;
+        }
+    }
+
+    if (!encontrado) {
+        cout << "Veiculo com a placa " << placa << " nao encontrado." << endl;
+        return;
+    }
+
+    ofstream frotaArqOut("frota.bin", ios::binary | ios::trunc);
+    if (!frotaArqOut) {
+        cout << "Erro ao abrir o arquivo frota.bin para escrita!" << endl;
+        return;
+    }
+
+    for (double i = 0; i < frota.size(); i++) {
+        frotaArqOut.write((const char *)&frota[i], sizeof(Veiculo));
+    }
+
+    frotaArqOut.close();
+    cout << "Atualizacao feita" << endl;
 }
