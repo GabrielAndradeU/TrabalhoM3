@@ -14,9 +14,9 @@ using namespace std;
 
 typedef struct
 {
-    char codigo[5], marca_modelo[30], placa[7];
+    char codigo[5], marca_modelo[30], placa[8];
     char categoria;
-    bool situacao; // false para locado e true para disponivel
+    char situacao[11]; //  locado ou disponivel
     int qtdLocacoes = 0;
 } Veiculo;
 
@@ -24,16 +24,19 @@ typedef struct
 {
     char cpf, codigoVeiculo;
     int qtdDias;
-    bool situacaoLocacao; // True para Ativo e False para Inativo
+    char situacaoLocacao; //  locado ou disponivel
     string dataDevolucao;
 } Locacao;
 
 bool ehNumero(string); // Validação de número
 bool ehLetra(string);  // Conferir se é letra
 void maiusc(string &); // Tranformar em maiúsculo (Lembrar se vamos usar. Caso não usarmos. RETIRAR)
-void lerDadosVeiculo(string &codigo, string &marca_modelo, string &placa, char &categoria);
-string escolherMarca();
-bool pesquisar (Veiculo, string);
+bool lerDadosVeiculo(Veiculo veipesquisa, string &codigo, string &marca_modelo, string &placa, char &categoria); // é bool pois só vai gravar se a placa não estiver cadastrada.
+string escolherMarca(); // limitei as marcas
+bool pesquisarPlaca(Veiculo, string);
+bool pesquisarDisponivel(Veiculo, string); // da para melhorar depois, para pesquisar aqueles que não estão disponiveis tbm, em vez de apenas disponivel
+void exibirFrota(Veiculo);
+void exibirFrotaDisponivel(Veiculo, char);
 
 int main()
 {
@@ -41,6 +44,7 @@ int main()
     string codigoMain, marca_modeloMain, placaMain, situacaoMain;
     char categoriaMain;
     Veiculo veiculoDados;
+    vector<Locacao>locacao;
 
     do
     {
@@ -57,24 +61,50 @@ int main()
         {
         case 1:
             // Inclusão de veículo
-            lerDadosVeiculo(codigoMain, marca_modeloMain, placaMain, categoriaMain);
+            if (lerDadosVeiculo(veiculoDados, codigoMain, marca_modeloMain, placaMain, categoriaMain)) // se der true, vai continua com o codigo e gravar. Se der false, é porque já tem a placa cadastrada.
             {
-                ofstream frota2("frota.bin", ios::binary | ios::app); // Usar ofstream para escrita
-                if (!frota2)
                 {
-                    cout << "Erro ao abrir o arquivo frota.bin para escrita!" << endl;
-                    break;
-                }
+                    ofstream frota2("frota.bin", ios::binary | ios::app); 
+                    if (!frota2)
+                    {
+                        cout << "Erro ao abrir o arquivo frota.bin para escrita!" << endl;
+                        break;
+                    }
+                    strcpy(veiculoDados.codigo, codigoMain.c_str());
+                    strcpy(veiculoDados.marca_modelo, marca_modeloMain.c_str());
+                    strcpy(veiculoDados.placa, placaMain.c_str());
+                    veiculoDados.categoria = categoriaMain; 
+                    situacaoMain = "Disponivel";
+                    strcpy(veiculoDados.situacao, situacaoMain.c_str());
 
-                strcpy(veiculoDados.codigo, codigoMain.c_str());
-                strcpy(veiculoDados.marca_modelo, marca_modeloMain.c_str());
-                strcpy(veiculoDados.placa, placaMain.c_str());
-                frota2.write((const char *)(&veiculoDados), sizeof(Veiculo));
-                frota2.close();
+                    frota2.write((const char *)(&veiculoDados), sizeof(Veiculo));
+                    frota2.close();
+                    cout<<"------Gravado com Sucesso------"<<endl;
+                }
             }
             break;
 
         case 2:
+            if (pesquisarDisponivel(veiculoDados, "Disponivel"))
+            {
+
+                char categoriaBlocoIF;
+                cout << "Tem carro disponivel" << endl;
+                do
+                {
+                    cout << "Digite a categoria (B/I/S): ";
+                    categoriaBlocoIF = toupper(cin.get());
+                    if (categoriaBlocoIF != 'B' and categoriaBlocoIF != 'I' and categoriaBlocoIF != 'S')
+                        {
+                            cout << "Erro: a categoria precisa ser B, I ou S." << endl;
+                        }
+                } while (categoriaBlocoIF != 'B' and categoriaBlocoIF != 'I' and categoriaBlocoIF != 'S'); // corrigir depois para voltar ao menu, para não pedir novamente
+                exibirFrotaDisponivel(veiculoDados, categoriaBlocoIF);
+                cout<<"Digite a placa do veiculo"; // validar a placa e procurar
+
+
+            }
+
             break;
 
         case 3:
@@ -87,9 +117,10 @@ int main()
             cout << endl;
             break;
 
-        case 5:
+        case 5: // Se der tempo, fazer uma sub rotina. Melhorar visualização
                 {
-                ifstream frota1("frota.bin", ios::binary); 
+                exibirFrota(veiculoDados);    
+                /*ifstream frota1("frota.bin", ios::binary); 
                 if (!frota1)
                 {
                     cout << "Erro ao abrir o arquivo FROTA.bin para leitura." << endl;
@@ -117,7 +148,7 @@ int main()
                     frota1.read((char *)&veiculoDados, sizeof(Veiculo));
                     if (frota1)
                     {
-                        // Mostrar os dados do veículo
+                      
                         cout << veiculoDados.codigo << "\t"
                              << veiculoDados.marca_modelo << "\t"
                              << veiculoDados.placa << "\t"
@@ -134,6 +165,7 @@ int main()
 
                 frota1.close();
                 cout << endl;
+                */
             }
             break;
         case 6:
@@ -186,9 +218,57 @@ void maiusc(string &frase)
     }
 }
 
-void lerDadosVeiculo(string &codigo, string &marca_modelo, string &placa, char &categoria)
+bool lerDadosVeiculo(Veiculo veiPesquisa, string &codigo, string &marca_modelo, string &placa, char &categoria)
 {
     bool estaok = false;
+    string placateste;
+    do
+    {
+        cout << "Digite a placa do veiculo: ";
+        getline(cin, placateste);
+
+        if (placateste.size() != 7)
+        {
+            cout << "Placa invalida. O formato deve ser 3 letras seguidas de 4 numeros." << endl;
+        }
+        else
+        {
+            bool valida = true;
+
+            for (int i = 0; i < 3; i++)
+            {   
+                maiusc(placateste);
+                if (!isalpha(placateste[i]))
+                {
+                    valida = false;
+                    break;
+                }
+            }
+            for (int i = 3; i < 7; i++)
+            {
+                if (!isdigit(placateste[i]))
+                {
+                    valida = false;
+                    break;
+                }
+            }
+
+            if (valida)
+            {
+                break;
+            }
+            else
+            {
+                cout << "Placa invalida. O formato deve ser 3 letras seguidas de 4 numeros." << endl;
+            }
+        }
+    } while (true);
+
+    if (pesquisarPlaca(veiPesquisa, placateste)){
+        cout<<"Ja consta veicula com essa placa."<<endl;
+        return false;
+    }
+    placa = placateste;
     do
     {
         cout << "Digite o codigo do veiculo: ";
@@ -216,49 +296,6 @@ void lerDadosVeiculo(string &codigo, string &marca_modelo, string &placa, char &
     } while (not estaok);
     maiusc(nomeCarro);
     marca_modelo = marca_modelo + " - " + nomeCarro;
-
-    do
-    {
-        cout << "Digite a placa do veiculo: ";
-        getline(cin, placa);
-
-        if (placa.size() != 7)
-        {
-            cout << "Placa precisa conter 7 digitos" << endl;
-        }
-        else
-        {
-            bool valida = true;
-
-            for (int i = 0; i < 3; i++)
-            {
-                if (!isalpha(placa[i]))
-                {
-                    valida = false;
-                    break;
-                }
-            }
-            for (int i = 3; i < 7; i++)
-            {
-                if (!isdigit(placa[i]))
-                {
-                    valida = false;
-                    break;
-                }
-            }
-
-            if (valida)
-            {
-                cout << "Placa valida: " << placa << endl;
-                break;
-            }
-            else
-            {
-                cout << "Placa invalida. O formato deve ser 3 letras seguidas de 4 numeros." << endl;
-            }
-        }
-    } while (true);
-
     do
     {
         cout << "Digite a categoria (B/I/S): ";
@@ -268,6 +305,8 @@ void lerDadosVeiculo(string &codigo, string &marca_modelo, string &placa, char &
             cout << "Erro: a categoria precisa ser B, I ou S." << endl;
         }
     } while (categoria != 'B' and categoria != 'I' and categoria != 'S');
+
+    return true;
 }
 
 string escolherMarca()
@@ -305,31 +344,139 @@ string escolherMarca()
     } while (true);
 }
 
-bool pesquisar(Veiculo pesquisa, string placaProcurada)
+bool pesquisarPlaca(Veiculo pesquisa, string placaProcurada)
 {
     ifstream frotapesquisa("frota.bin", ios::binary);
-    char placaAux[7];
-    strcpy(placaAux, placaProcurada.c_str());
-
-    frotapesquisa.close();
     frotapesquisa.seekg(0, ios::end);
-    double cont = frotapesquisa.tellg();
+    double cont = frotapesquisa.tellg();  
     frotapesquisa.seekg(0, ios::beg);
     for (double i = 0; i < cont / sizeof(Veiculo); i++)
     {
-        frotapesquisa.read((char *)&pesquisa, sizeof(Veiculo));
-        if (frotapesquisa)
+        frotapesquisa.read((char *)&pesquisa, sizeof(Veiculo));  
+        
+        if (frotapesquisa) {
+          
+            if (string(pesquisa.placa) == placaProcurada) { //transforma o char em string
+                frotapesquisa.close();
+                return true;  
+            }
+        } else {
+            
+            cout << "Erro ao ler os dados do veiculo no registro " << i + 1 << endl;
+            break;  
+        }
+    }
+    return false;  
+}
+
+bool pesquisarDisponivel(Veiculo pesquisa, string EncontrarDisponivel)
+{
+    ifstream frotapesquisa("frota.bin", ios::binary);
+    frotapesquisa.seekg(0, ios::end);
+    double cont = frotapesquisa.tellg();  
+    frotapesquisa.seekg(0, ios::beg);   
+
+    for (double i = 0; i < cont / sizeof(Veiculo); i++)
+    {
+        frotapesquisa.read((char *)&pesquisa, sizeof(Veiculo));  
+        
+        if (frotapesquisa) {
+          
+            if (string(pesquisa.situacao) == EncontrarDisponivel) { //transforma o char em string
+                frotapesquisa.close();
+                return true;  
+            }
+        } else {
+            
+            cout << "Erro ao ler os dados do veiculo no registro " << i + 1 << endl;
+            break;  
+        }
+    }
+    return false;  
+}
+
+void exibirFrota(Veiculo veiculoDados) {
+
+    ifstream frota1("frota.bin", ios::binary);  
+
+    if (!frota1) {
+        cout << "Erro ao abrir o arquivo FROTA.bin para leitura." << endl;
+        return;  
+    }
+
+   
+    frota1.seekg(0, ios::end);
+    double cont = frota1.tellg();  
+    frota1.seekg(0, ios::beg);  
+
+    if (cont == 0) {
+        cout << "O arquivo esta vazio!" << endl;
+        frota1.close();
+        return;  
+    }
+
+  
+    cout << "Lista de Veículos cadastrados:\n";
+    cout << "Codigo\tMarca-Modelo\tPlaca\tCategoria\tQtd Locacoes\tSituazao\n";
+    cout << "---------------------------------------------------------------\n";
+
+    
+    for (double i = 0; i < cont / sizeof(Veiculo); i++) {
+        frota1.read((char *)&veiculoDados, sizeof(Veiculo));  
+
+        if (frota1) {
+          
+            cout << veiculoDados.codigo << "\t"
+                 << veiculoDados.marca_modelo << "\t"
+                 << veiculoDados.placa << "\t"
+                 << veiculoDados.categoria << "\t"
+                 << veiculoDados.qtdLocacoes << "\t"
+                 <<veiculoDados.situacao<<endl;
+        } else {
+            cout << "Erro ao ler os dados do veículo no registro " << i + 1 << endl;
+            break;
+        }
+    }
+
+    frota1.close(); 
+    cout << endl;
+}
+
+void exibirFrotaDisponivel(Veiculo veiculoDados, char categoria)
+{
+    ifstream frota1("frota.bin", ios::binary);
+    frota1.seekg(0, ios::end);
+    double cont = frota1.tellg();
+    frota1.seekg(0, ios::beg);
+
+    cout << "Lista de Veiculos Disponiveis:\n";
+    cout << "Codigo\tMarca-Modelo\tPlaca\tCategoria\tQtd Locacoes\tSituazao\n";
+    cout << "---------------------------------------------------------------\n";
+
+    for (double i = 0; i < cont / sizeof(Veiculo); i++)
+    {
+        frota1.read((char *)&veiculoDados, sizeof(Veiculo));
+
+        if (frota1)
         {
-            if (placaAux == placaProcurada)
-                return true;            
+            // Verifique se a situação é exatamente "Disponivel"
+            if (string(veiculoDados.situacao) == "Disponivel" and veiculoDados.categoria == categoria)
+            {
+                cout << veiculoDados.codigo << "\t"
+                     << veiculoDados.marca_modelo << "\t"
+                     << veiculoDados.placa << "\t"
+                     << veiculoDados.categoria << "\t"
+                     << veiculoDados.qtdLocacoes << "\t"
+                     << veiculoDados.situacao << endl;
+            }
         }
         else
         {
             cout << "Erro ao ler os dados do veículo no registro " << i + 1 << endl;
-            cout<<endl;
             break;
         }
     }
-    return false;
-}
 
+    frota1.close();
+    cout << endl;
+}
